@@ -14,19 +14,44 @@ export const getTrigramsFromHexagram = (
   return [index % 8, Math.floor(index / 8)];
 };
 
-export const getHexaImageURL = async (index: number): Promise<string> => {
+export const getHexaImageURL = async (index: number, isDarkMode: boolean = false): Promise<string> => {
   const chars = fill6Bit(index.toString(2)).split("");
   drawContext?.clearRect(0, 0, 100, 100);
 
+  // Set colors based on theme - softer colors
+  const lineColor = isDarkMode ? '#e5e7eb' : '#374151';
+  const shadowColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  
+  drawContext!.fillStyle = lineColor;
+
   chars.forEach((charValue, charIndex) => {
-    const yAxis = (6 - Number(charIndex)) * 14;
+    const yAxis = (6 - Number(charIndex)) * 14 + 8; // Add padding
+    const lineWidth = 8;
+    const gapWidth = 12;
+    const totalWidth = 80;
+    
     if (charValue === "1") {
-      drawContext?.fillRect(10, yAxis, 80, 10);
+      // Solid line with rounded corners
+      drawContext!.fillStyle = lineColor;
+      drawContext?.fillRect(10, yAxis, totalWidth, lineWidth);
+      
+      // Add subtle shadow for depth
+      drawContext!.fillStyle = shadowColor;
+      drawContext?.fillRect(10, yAxis + lineWidth, totalWidth, 1);
     }
 
     if (charValue === "0") {
-      drawContext?.fillRect(10, yAxis, 30, 10);
-      drawContext?.fillRect(60, yAxis, 30, 10);
+      // Broken lines with rounded corners
+      const leftWidth = (totalWidth - gapWidth) / 2;
+      
+      drawContext!.fillStyle = lineColor;
+      drawContext?.fillRect(10, yAxis, leftWidth, lineWidth);
+      drawContext?.fillRect(10 + leftWidth + gapWidth, yAxis, leftWidth, lineWidth);
+      
+      // Add subtle shadow
+      drawContext!.fillStyle = shadowColor;
+      drawContext?.fillRect(10, yAxis + lineWidth, leftWidth, 1);
+      drawContext?.fillRect(10 + leftWidth + gapWidth, yAxis + lineWidth, leftWidth, 1);
     }
   });
 

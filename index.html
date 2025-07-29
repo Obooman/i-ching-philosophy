@@ -1,62 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>六十四卦 查询</title>
-    <style>
-      body,
-      html {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
+    
+    <!-- Primary Meta Tags -->
+    <title>六十四卦查询 - I Ching Hexagram Query | 易经占卜在线工具</title>
+    <meta name="description" content="专业的六十四卦查询工具，支持二进制编码输入，详细解释每个卦象的含义。易经占卜，周易查询，传统文化研究工具。" />
+    <meta name="keywords" content="六十四卦,易经,周易,占卜,卦象查询,I Ching,hexagram,divination,风水,命理" />
+    <meta name="author" content="Hexagrams Query Tool" />
+    <meta name="language" content="zh-CN" />
+    <link rel="canonical" href="https://oboo.github.io/hexagrams-query/" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://oboo.github.io/hexagrams-query/" />
+    <meta property="og:title" content="六十四卦查询 - I Ching Hexagram Query" />
+    <meta property="og:description" content="专业的六十四卦查询工具，支持二进制编码输入，详细解释每个卦象的含义" />
+    <meta property="og:image" content="https://oboo.github.io/hexagrams-query/og-image.jpg" />
+    <meta property="og:site_name" content="六十四卦查询" />
+    <meta property="og:locale" content="zh_CN" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://oboo.github.io/hexagrams-query/" />
+    <meta property="twitter:title" content="六十四卦查询 - I Ching Hexagram Query" />
+    <meta property="twitter:description" content="专业的六十四卦查询工具，支持二进制编码输入，详细解释每个卦象的含义" />
+    <meta property="twitter:image" content="https://oboo.github.io/hexagrams-query/og-image.jpg" />
+    
+    <!-- Additional SEO Tags -->
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="baiduspider" content="index, follow" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="theme-color" content="#5e6ad2" />
+    
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "六十四卦查询工具",
+      "description": "专业的六十四卦查询工具，支持二进制编码输入，详细解释每个卦象的含义",
+      "url": "https://oboo.github.io/hexagrams-query/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web Browser",
+      "author": {
+        "@type": "Organization",
+        "name": "Hexagrams Query Tool"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "inLanguage": "zh-CN",
+      "keywords": "六十四卦,易经,周易,占卜,卦象查询,I Ching,hexagram,divination"
+    }
+    </script>
+    
+    <!-- Google Analytics will be dynamically loaded if GA_ID is configured -->
+    <script>
+      // Google Analytics configuration
+      window.GA_ID = import.meta.env.VITE_GA_ID || '';
+      
+      if (window.GA_ID) {
+        // Load Google Analytics script
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${window.GA_ID}`;
+        document.head.appendChild(script);
+        
+        // Initialize Google Analytics
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', window.GA_ID);
       }
-
-      img {
-        display: block;
-      }
-
-      #hexaCode {
-        padding: 10px;
-        margin: 10px;
-        box-sizing: border-box;
-        border: 4px solid rgb(0, 19, 93);
-        resize: none;
-      }
-
-      aside {
-        width: 500px;
-        text-align: center;
-        display: flex;
-        flex-wrap: wrap;
-      }
-
-      aside a {
-        text-decoration: none;
-        color: #029df9;
-        font-weight: bold;
-      }
-
-      aside img {
-        width: 60px;
-        height: 60px;
-      }
-
-      aside div {
-        width: 60px;
-      }
-
-      aside span {
-        font-size: 14px;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
-          sans-serif;
-      }
-    </style>
+    </script>
+    
+    <script>
+      // This script runs before React to prevent flash of incorrect theme
+      (function() {
+        var storedTheme = localStorage.getItem('vite-ui-theme') || 'system';
+        var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        var theme = storedTheme === 'system' ? systemTheme : storedTheme;
+        document.documentElement.classList.add(theme === 'dark' ? 'dark' : 'light');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script src="./src/main.tsx" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
