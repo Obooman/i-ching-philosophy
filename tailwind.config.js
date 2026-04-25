@@ -8,16 +8,6 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        linear: {
-          bg: '#0f0f10',
-          surface: '#1a1a1d',
-          surfaceHover: '#252528',
-          border: '#2a2a2d',
-          text: '#ffffff',
-          textSecondary: '#a0a0a0',
-          accent: '#5e6ad2',
-          accentHover: '#6b7be8',
-        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -58,25 +48,22 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        mono: ['Inter', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'monospace'],
-      },
-      boxShadow: {
-        linear: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
-        linearHover: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
-        'slide-up': 'slideUp 0.2s ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
+        sans: [
+          "Inter",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Noto Sans SC",
+          "PingFang SC",
+          "Microsoft YaHei",
+          "sans-serif",
+        ],
+        mono: [
+          "JetBrains Mono",
+          "SF Mono",
+          "Fira Code",
+          "monospace",
+        ],
       },
     },
   },

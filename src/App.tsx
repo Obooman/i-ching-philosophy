@@ -1,81 +1,96 @@
 import React, { useState, useEffect } from "react";
-import { HexagramList } from "./HexagramList";
+import { HexagramList, FocusedHexagram } from "./HexagramList";
 import { ThemeToggle } from "./components/theme-toggle";
+import { LineToggler } from "./components/LineToggler";
 import { trackPageView, trackEvent, isAnalyticsEnabled } from "./lib/analytics";
 import "./styles/index.css";
 
 export const App = () => {
-  const [hexaValue, updateHexaValue] = useState("1101010");
+  const [hexaValue, setHexaValue] = useState("111111");
 
-  // Track page views and user interactions
   useEffect(() => {
-    // Log page view
     if (isAnalyticsEnabled()) {
-      trackPageView(window.location.pathname, '六十四卦查询');
+      trackPageView(window.location.pathname, "六十四卦查询");
     }
 
-    // Track hexagram searches
-    const handleHexagramSearch = (value: string) => {
-      if (value.length === 6 && /^[01]+$/.test(value)) {
-        trackEvent('hexagram_search', {
-          event_category: 'engagement',
-          event_label: `Hexagram ${parseInt(value, 2)}`,
-          value: parseInt(value, 2),
+    const searchTimeout = setTimeout(() => {
+      if (hexaValue.length === 6 && /^[01]+$/.test(hexaValue)) {
+        trackEvent("hexagram_search", {
+          event_category: "engagement",
+          event_label: `Hexagram ${parseInt(hexaValue, 2)}`,
+          value: parseInt(hexaValue, 2),
         });
       }
-    };
-
-    // Set up search tracking
-    const searchTimeout = setTimeout(() => {
-      handleHexagramSearch(hexaValue);
     }, 1000);
 
     return () => clearTimeout(searchTimeout);
   }, [hexaValue]);
 
+  const hexaIndex = parseInt(hexaValue, 2);
+  const isValid = hexaValue.length === 6 && /^[01]+$/.test(hexaValue);
+
   return (
-    <div className="min-h-screen bg-background p-4 font-mono">
-      <div className="max-w-6xl mx-auto animate-fade-in">
-        <header className="mb-8 text-center flex justify-between items-start">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              I Ching Hexagram Query
+    <div className="min-h-screen bg-background font-sans">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-10">
+        <header className="mb-8 sm:mb-12 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              易經六十四卦
             </h1>
-            <p className="text-muted-foreground">
-              Enter a 6-bit binary code to explore ancient wisdom
+            <p className="text-sm text-muted-foreground mt-1">
+              I Ching Hexagram Query
             </p>
           </div>
           <ThemeToggle />
         </header>
-        
-        <main className="bg-gradient-to-br from-card to-accent/5 rounded-2xl shadow-lg p-8 animate-slide-up border border-border/20 backdrop-blur-sm">
-          <div className="mb-8">
-            <label htmlFor="hexaCode" className="block text-sm font-medium text-muted-foreground mb-3">
-              Hexagram Binary Code
-            </label>
-            <textarea
-              className="w-full p-4 bg-background/80 border border-input/50 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/60 resize-none text-foreground placeholder-muted-foreground transition-all duration-300 hover:bg-muted/50 backdrop-blur-sm"
-              placeholder="Enter 6-bit binary (e.g., 110101)"
-              id="hexaCode"
-              value={hexaValue}
-              rows={3}
-              onInput={(event) => {
-                updateHexaValue(event.target.value);
-              }}
-            />
-            <div className="mt-2 text-xs text-muted-foreground">
-              {hexaValue.length === 6 ? (
-                <span className="text-primary">Valid 6-bit code</span>
-              ) : (
-                <span>Enter exactly 6 bits (0s and 1s)</span>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          <aside className="lg:col-span-1">
+            <div className="sticky top-6 space-y-6">
+              <div className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm p-6">
+                <h2 className="text-sm font-semibold text-foreground mb-4 tracking-wide uppercase">
+                  Build Your Hexagram
+                </h2>
+
+                <div className="flex justify-center mb-4">
+                  <LineToggler value={hexaValue} onChange={setHexaValue} />
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/40">
+                  <span className="font-mono tabular-nums">
+                    {hexaValue}
+                  </span>
+                  {isValid ? (
+                    <span className="text-primary font-medium">
+                      #{hexaIndex}
+                    </span>
+                  ) : (
+                    <span className="text-destructive">6 bits needed</span>
+                  )}
+                </div>
+              </div>
+
+              {isValid && (
+                <div className="rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-sm p-6 animate-slide-up">
+                  <FocusedHexagram focus={hexaValue} />
+                </div>
               )}
             </div>
-          </div>
-          
-          <div className="grid grid-cols-8 gap-3">
-            <HexagramList focus={hexaValue} />
-          </div>
-        </main>
+          </aside>
+
+          <section className="lg:col-span-2">
+            <div className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-6 tracking-wide uppercase">
+                All 64 Hexagrams
+              </h2>
+              <HexagramList focus={hexaValue} />
+            </div>
+          </section>
+        </div>
+
+        <footer className="mt-16 mb-8 text-center text-xs text-muted-foreground/60">
+          <p>易經六十四卦 · I Ching · 64 Hexagrams</p>
+        </footer>
       </div>
     </div>
   );
