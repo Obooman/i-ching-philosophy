@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24H Chronometer & Cartesian Coordinates - Light Theme</title>
+    <style>
+        :root {
+            --bg-color: #F9FAFB;       /* 温暖舒适的浅灰底色，模拟明亮的工作室桌面 */
+            --desk-bg: #ffffff;        /* 纯白卡片，如同一块精致切削的白色面板 */
+            --record-bg: #fbfbfa;      /* 录制区独立卡片背景 */
+            --border-color: rgba(0, 0, 0, 0.05);
+            --text-main: #1d1d1f;       /* 高级石墨深灰，避免纯黑的刺眼感 */
+            --text-muted: #86868b;      /* 灰色副文本 */
+            --accent-brass: #b88a24;    /* 微调加深的奢华暗金 */
+            --accent-brass-hover: #9c7118;
+            --panel-inset: #f2f2f4;     /* 浅灰色的凹陷背景，带来实体物理部件感 */
+            scroll-behavior: none;
+
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            scrollbar-color: transparent;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "SF Pro Display", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px 20px;
+            gap: 25px;
+            letter-spacing: -0.01em;
+        }
+
+        /* ==================== 1. 录制区域 (钟表与坐标图 1:1 并排) ==================== */
+        .recording-zone {
+            border-radius: 24px;
+            padding: 30px;
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; /* 窄屏自动换行 */
+        }
+
+        canvas {
+            display: block;
+            border-radius: 8px;
+        }
+
+        /* ==================== 2. 控制区域 (底部横向组合) ==================== */
+        .control-panel-horizontal {
+            width: 100%;
+            max-width: 1050px;
+            background-color: var(--desk-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            
+            /* 横向网格布局 */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel-horizontal {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-family: monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .control-label span.cn {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        /* 现代浅色选择器 */
+        .segmented-control {
+            display: flex;
+            background-color: var(--panel-inset);
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+        }
+
+        .segment-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 4px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+
+        .segment-btn span.cn {
+            font-size: 0.65rem;
+            transform: scale(0.9);
+        }
+
+        .segment-btn.active {
+            background-color: #ffffff; /* 浮雕感白色小滑块 */
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 滑块轨组件 */
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--panel-inset);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .slider-wrapper input[type="number"] {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-family: "JetBrains Mono", Menlo, monospace;
+            font-size: 0.8rem;
+            width: 60px;
+            text-align: right;
+            outline: none;
+        }
+
+        .slider-wrapper input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(0, 0, 0, 0.08);
+            height: 2px;
+            border-radius: 1px;
+            outline: none;
+        }
+
+        .slider-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--accent-brass);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .slider-wrapper input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* 按钮与信息合并列 */
+        .btn-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .desk-btn {
+            width: 100%;
+            background-color: var(--panel-inset);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .desk-btn:hover {
+            border-color: rgba(0, 0, 0, 0.1);
+            background-color: #eaeaea;
+        }
+
+        .desk-btn:active {
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        .desk-btn.highlight {
+            border-color: var(--accent-brass);
+            color: var(--accent-brass);
+        }
+
+        /* 数据监视面板 */
+        .status-card {
+            background-color: var(--panel-inset);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: "JetBrains Mono", Menlo, monospace;
+            font-size: 0.7rem;
+            line-height: 1.5;
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .status-row {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-label {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            letter-spacing: 0.02em;
+        }
+
+        .status-val {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 1. 录制区域 (钟表与坐标图 1:1 并排) -->
+<div class="recording-zone">
+    <!-- 极坐标时钟 -->
+    <canvas id="clockCanvas"></canvas>
+    <!-- 笛卡尔直角坐标图 -->
+    <canvas id="chartCanvas"></canvas>
+</div>
+
+<!-- 2. 控制区域 (底部横向组合) -->
+<div class="control-panel-horizontal">
+    
+    <!-- 运行模式 -->
+    <div class="control-group">
+        <div class="control-label">
+            <span>DISPLAY MODE</span>
+            <span class="cn">运行模式</span>
+        </div>
+        <div class="segmented-control">
+            <button class="segment-btn" onclick="setMode('realtime')" id="btn-realtime">
+                <span>REALTIME</span><span class="cn">实时时钟</span>
+            </button>
+            <button class="segment-btn active" onclick="setMode('hybrid')" id="btn-hybrid">
+                <span>HYBRID</span><span class="cn">混合模式</span>
+            </button>
+            <button class="segment-btn" onclick="setMode('split')" id="btn-split">
+                <span>SPLIT</span><span class="cn">静态拆分</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 均分指针数 -->
+    <div class="control-group" id="split-control">
+        <div class="control-label">
+            <span>SPLIT POINTERS</span>
+            <span class="cn">均分指针数 (1 - 1000)</span>
+        </div>
+        <div class="slider-wrapper">
+            <input type="range" id="splitSlider" min="1" max="120" value="24" oninput="updateSplitCount(this.value)">
+            <input type="number" id="splitInput" min="1" max="1000" value="24" oninput="updateSplitCount(this.value)">
+        </div>
+    </div>
+
+    <!-- 转速倍率 -->
+    <div class="control-group" id="speed-control">
+        <div class="control-label">
+            <span>CHRONOMETER SPEED</span>
+            <span class="cn">运行转速倍率 (1 - 50000)</span>
+        </div>
+        <div class="slider-wrapper">
+            <input type="range" id="speedSlider" min="0" max="1" step="0.001" value="0" oninput="updateSpeedFromSlider(this.value)">
+            <input type="number" id="speedInput" min="1" max="50000" value="1" oninput="updateSpeedFromInput(this.value)">
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="control-group btn-col">
+        <button class="desk-btn" id="pauseBtn" onclick="togglePause()">
+            <span>PAUSE</span><span>/</span><span class="cn">暂停</span>
+        </button>
+        <button class="desk-btn highlight" onclick="resetToNow()">
+            <span>RESET NOW</span><span>/</span><span class="cn">重置时间</span>
+        </button>
+    </div>
+
+    <!-- 数据与状态面板 -->
+    <div class="control-group">
+        <div class="status-card">
+            <div class="status-row">
+                <span class="status-label">EPOCH TIME / 虚拟时间:</span>
+                <span class="status-val" id="virtualTimeDisplay">-</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">ACTIVE HAND / 指针状态:</span>
+                <span class="status-val" id="pointerStateDisplay" style="color: var(--accent-brass);">-</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ==================== A. 全局辅助函数 ====================
+    
+    /**
+     * 从时间戳中计算出当日 24 小时制浮点数值
+     */
+    function getHoursFromEpoch(ms) {
+        const date = new Date(ms);
+        const h = date.getHours();
+        const m = date.getMinutes();
+        const s = date.getSeconds();
+        const milli = date.getMilliseconds();
+        return h + m / 60 + s / 3600 + milli / 3600000;
+    }
+
+    /**
+     * 共享的渐变色计算函数 (供时钟与直角坐标指针共享)
+     */
+    function addGradientStops(grad, t) {
+        t = ((t % 24) + 24) % 24;
+
+        if (t < 12) {
+            let whiteRatio = t / 12;
+            if (whiteRatio <= 0.002) {
+                grad.addColorStop(0, '#000000');
+                grad.addColorStop(1, '#000000');
+            } else if (whiteRatio >= 0.998) {
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(1, '#ffffff');
+            } else {
+                let boundary = 1 - whiteRatio;
+                grad.addColorStop(0, '#000000');
+                grad.addColorStop(Math.max(0, boundary - 0.003), '#000000');
+                grad.addColorStop(Math.min(1, boundary + 0.003), '#ffffff');
+                grad.addColorStop(1, '#ffffff');
+            }
+        } else {
+            let blackRatio = (t - 12) / 12;
+            if (blackRatio <= 0.002) {
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(1, '#ffffff');
+            } else if (blackRatio >= 0.998) {
+                grad.addColorStop(0, '#000000');
+                grad.addColorStop(1, '#000000');
+            } else {
+                let boundary = 1 - blackRatio;
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(Math.max(0, boundary - 0.003), '#ffffff');
+                grad.addColorStop(Math.min(1, boundary + 0.003), '#000000');
+                grad.addColorStop(1, '#000000');
+            }
+        }
+    }
+
+    // ==================== B. 状态变量与初始化 ====================
+    const canvas = document.getElementById('clockCanvas');
+    const ctx = canvas.getContext('2d');
+    const chartCanvas = document.getElementById('chartCanvas');
+    const chartCtx = chartCanvas.getContext('2d');
+
+    const baseSize = 480; 
+    let currentMode = 'hybrid'; 
+    let splitCount = 24;
+    let speedMultiplier = 1;
+    let isPaused = false;
+
+    let virtualTime = Date.now();
+    let lastFrameTime = Date.now();
+
+    const minSpeed = 1;
+    const maxSpeed = 50000; 
+    const lnMin = Math.log(minSpeed);
+    const lnMax = Math.log(maxSpeed);
+
+    // 初始化高分辨率 Retina Canvas 缩放
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        [canvas, chartCanvas].forEach(c => {
+            c.width = baseSize * dpr;
+            c.height = baseSize * dpr;
+            c.style.width = baseSize + 'px';
+            c.style.height = baseSize + 'px';
+        });
+        
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+
+        chartCtx.resetTransform();
+        chartCtx.scale(dpr, dpr);
+    }
+
+    function init() {
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas); 
+
+        updateSpeedUI(1);
+        animate();
+    }
+
+    // ==================== C. 交互控件逻辑 ====================
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${mode}`).classList.add('active');
+
+        const speedCtrl = document.getElementById('speed-control');
+        const splitCtrl = document.getElementById('split-control');
+        const pauseBtn = document.getElementById('pauseBtn');
+
+        if (mode === 'split') {
+            speedCtrl.style.opacity = '0.3';
+            splitCtrl.style.opacity = '1';
+            pauseBtn.style.opacity = '0.3';
+        } else if (mode === 'realtime') {
+            speedCtrl.style.opacity = '1';
+            splitCtrl.style.opacity = '0.3';
+            pauseBtn.style.opacity = '1';
+        } else {
+            speedCtrl.style.opacity = '1';
+            splitCtrl.style.opacity = '1';
+            pauseBtn.style.opacity = '1';
+        }
+    }
+
+    function updateSplitCount(val) {
+        let parsed = parseInt(val);
+        if (isNaN(parsed) || parsed < 1) parsed = 1;
+        if (parsed > 1000) parsed = 1000;
+
+        splitCount = parsed;
+        document.getElementById('splitInput').value = parsed;
+        document.getElementById('splitSlider').value = Math.min(parsed, 120);
+    }
+
+    function updateSpeedFromInput(val) {
+        let speed = parseFloat(val);
+        if (isNaN(speed) || speed < 1) speed = 1;
+        if (speed > maxSpeed) speed = maxSpeed;
+
+        speedMultiplier = speed;
+        let ratio = (Math.log(speed) - lnMin) / (lnMax - lnMin);
+        document.getElementById('speedSlider').value = ratio;
+        document.getElementById('speedInput').value = Math.round(speed);
+    }
+
+    function updateSpeedFromSlider(val) {
+        let ratio = parseFloat(val);
+        let speed = Math.exp(lnMin + ratio * (lnMax - lnMin));
+        if (speed < 1.1) speed = 1;
+        if (speed > maxSpeed - 10) speed = maxSpeed;
+
+        speedMultiplier = speed;
+        document.getElementById('speedInput').value = Math.round(speed);
+    }
+
+    function updateSpeedUI(speed) {
+        speedMultiplier = speed;
+        document.getElementById('speedInput').value = Math.round(speed);
+        let ratio = (Math.log(speed) - lnMin) / (lnMax - lnMin);
+        document.getElementById('speedSlider').value = ratio;
+    }
+
+    function togglePause() {
+        if (currentMode === 'split') return;
+        isPaused = !isPaused;
+        
+        const pauseBtn = document.getElementById('pauseBtn');
+        if (isPaused) {
+            pauseBtn.innerHTML = `<span>RESUME</span><span>/</span><span class="cn">继续</span>`;
+        } else {
+            pauseBtn.innerHTML = `<span>PAUSE</span><span>/</span><span class="cn">暂停</span>`;
+            lastFrameTime = Date.now();
+        }
+    }
+
+    function resetToNow() {
+        virtualTime = Date.now();
+        lastFrameTime = Date.now();
+        updateSpeedUI(1);
+        if (isPaused) {
+            togglePause();
+        }
+    }
+
+    // ==================== D. 核心渲染部分 ====================
+
+    /**
+     * 绘制经典极坐标时钟
+     */
+    function drawClock() {
+        const cx = baseSize / 2;
+        const cy = baseSize / 2;
+        const radius = cx - 35;
+
+        ctx.clearRect(0, 0, baseSize, baseSize);
+
+        // 1. 表盘外壁凹陷环境光影
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        const rimGrad = ctx.createRadialGradient(cx, cy, radius - 15, cx, cy, radius + 2);
+        rimGrad.addColorStop(0, 'rgba(0, 0, 0, 0.1)'); // 亮色模式下减弱投影强度，避免生硬
+        rimGrad.addColorStop(0.9, 'rgba(0, 0, 0, 0.25)');
+        rimGrad.addColorStop(1, 'rgba(255, 255, 255, 0.8)'); // 亮色边缘微弱高光
+        ctx.fillStyle = rimGrad;
+        ctx.fill();
+        ctx.restore();
+
+        // 2. 钛灰色钟盘背景 (Titanium Slate Grey, 完美均衡黑白对比度)
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 2, 0, 2 * Math.PI);
+        const faceGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius - 2);
+        faceGrad.addColorStop(0, '#868b97'); // 稍微亮一些的中心，带来拉丝金属弧面立体感
+        faceGrad.addColorStop(1, '#6c717c'); 
+        ctx.fillStyle = faceGrad;
+        ctx.fill();
+
+        // 3. 内嵌细线
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 45, 0, 2 * Math.PI);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // 4. 刻度系统绘制
+        ctx.save();
+        ctx.translate(cx, cy);
+        
+        // 15分钟刻度
+        for (let i = 0; i < 96; i++) {
+            if (i % 4 === 0) continue; 
+            let angle = (i / 96) * 2 * Math.PI;
+            ctx.beginPath();
+            ctx.moveTo((radius - 12) * Math.cos(angle), (radius - 12) * Math.sin(angle));
+            ctx.lineTo((radius - 8) * Math.cos(angle), (radius - 8) * Math.sin(angle));
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        // 24小时制时间标记
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = '400 11.5px "JetBrains Mono", "Courier New", monospace'; 
+
+        for (let i = 0; i < 24; i++) {
+            let angle = (i / 24) * 2 * Math.PI - Math.PI / 2;
+            let cos = Math.cos(angle);
+            let sin = Math.sin(angle);
+
+            let isMajor = (i % 6 === 0);
+            let tickStart = radius - (isMajor ? 18 : 14);
+            ctx.beginPath();
+            ctx.moveTo(tickStart * cos, tickStart * sin);
+            ctx.lineTo((radius - 6) * cos, (radius - 6) * sin);
+            ctx.strokeStyle = isMajor ? 'rgba(255, 255, 255, 0.65)' : 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = isMajor ? 1.5 : 1;
+            ctx.stroke();
+
+            let textDist = radius - 30;
+            ctx.fillText(i.toString(), textDist * cos, textDist * sin);
+        }
+        ctx.restore();
+
+        // 虚拟时间数值
+        let hoursDecimal = getHoursFromEpoch(virtualTime);
+
+        // 5. 极坐标均分指针（层级在下）
+        if (currentMode === 'split' || currentMode === 'hybrid') {
+            for (let i = 0; i < splitCount; i++) {
+                let t_val = (i / splitCount) * 24;
+                drawPolarPointer(cx, cy, radius - 45, t_val, 1.2, 0.8, 0.5, false);
+            }
+        }
+
+        // 6. 极坐标实时指针（层级在上）
+        if (currentMode === 'realtime' || currentMode === 'hybrid') {
+            drawPolarPointer(cx, cy, radius - 40, hoursDecimal, 4.5, 1.8, 1.0, true);
+        }
+
+        // 7. 黄铜表轴
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6.5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#222328';
+        ctx.fill();
+        ctx.strokeStyle = 'var(--accent-brass)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'var(--accent-brass)';
+        ctx.fill();
+    }
+
+    /**
+     * 极坐标单针矢量绘制
+     */
+    function drawPolarPointer(cx, cy, length, t, baseWidth, tipWidth, opacity, hasShadow = false) {
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        let angle = (t / 24) * 2 * Math.PI - Math.PI / 2;
+        ctx.rotate(angle);
+        ctx.globalAlpha = opacity;
+
+        if (hasShadow) {
+            // 亮色模式下，投影稍微柔和、半透明度高一些，使得立体感自然不浑浊
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 3;
+        }
+
+        const grad = ctx.createLinearGradient(0, 0, length, 0);
+        addGradientStops(grad, t);
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, -baseWidth / 2);
+        ctx.lineTo(length, -tipWidth / 2);
+        ctx.lineTo(length, tipWidth / 2);
+        ctx.lineTo(0, baseWidth / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    /**
+     * 绘制笛卡尔直角坐标图表
+     */
+    function drawCartesianChart() {
+        chartCtx.clearRect(0, 0, baseSize, baseSize);
+
+        const leftMargin = 65;
+        const rightMargin = 25;
+        const topMargin = 40;
+        const bottomMargin = 50;
+
+        const plotWidth = baseSize - leftMargin - rightMargin;
+        const plotHeight = baseSize - topMargin - bottomMargin;
+
+        const chartBottom = baseSize - bottomMargin;
+        const chartTop = topMargin;
+
+        // 1. 绘制图表背景 (使用相同的钛灰渐变，确保两张画布质感完全吻合)
+        chartCtx.beginPath();
+        chartCtx.rect(leftMargin, topMargin, plotWidth, plotHeight);
+        const plotGrad = chartCtx.createLinearGradient(leftMargin, topMargin, leftMargin + plotWidth, topMargin);
+        plotGrad.addColorStop(0, '#6c717c');
+        plotGrad.addColorStop(1, '#868b97');
+        chartCtx.fillStyle = plotGrad;
+        chartCtx.fill();
+        chartCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        chartCtx.lineWidth = 1;
+        chartCtx.stroke();
+
+        // 2. 绘制网格线与坐标文本
+        chartCtx.textAlign = 'center';
+        chartCtx.textBaseline = 'middle';
+        chartCtx.fillStyle = 'var(--text-main)'; // 主坐标文字为石墨深灰
+        chartCtx.font = '400 10.5px "JetBrains Mono", monospace';
+
+        // X轴刻度：每6小时
+        const xTicks = [0, 6, 12, 18, 24];
+        xTicks.forEach(tick => {
+            let ratio = tick / 24;
+            let xPos = leftMargin + ratio * plotWidth;
+
+            // 垂直网格参考线
+            chartCtx.beginPath();
+            chartCtx.moveTo(xPos, chartTop);
+            chartCtx.lineTo(xPos, chartBottom);
+            chartCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            chartCtx.stroke();
+
+            // X轴文本
+            chartCtx.fillText(`${tick}h`, xPos, chartBottom + 15);
+        });
+
+        // X轴说明文字
+        chartCtx.fillText('TIME / 时间 (0h - 24h)', leftMargin + plotWidth / 2, chartBottom + 35);
+
+        // Y轴刻度说明
+        chartCtx.textAlign = 'right';
+        const yTicks = [
+            { val: 0.0, label: '0.0 (BASE / 圆心)' },
+            { val: 0.5, label: '0.5' },
+            { val: 1.0, label: '1.0 (TIP / 针尖)' }
+        ];
+
+        yTicks.forEach(tick => {
+            let yPos = chartBottom - tick.val * plotHeight;
+
+            // 水平网格参考线
+            chartCtx.beginPath();
+            chartCtx.moveTo(leftMargin, yPos);
+            chartCtx.lineTo(leftMargin + plotWidth, yPos);
+            chartCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            chartCtx.stroke();
+
+            // Y轴文本
+            chartCtx.fillText(tick.label, leftMargin - 10, yPos);
+        });
+
+        // 绘制Y主轴线
+        chartCtx.beginPath();
+        chartCtx.moveTo(leftMargin, chartTop);
+        chartCtx.lineTo(leftMargin, chartBottom);
+        chartCtx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        chartCtx.stroke();
+
+        let hoursDecimal = getHoursFromEpoch(virtualTime);
+
+        // 3. 绘制笛卡尔静态均分指针 (层级在下)
+        if (currentMode === 'split' || currentMode === 'hybrid') {
+            for (let i = 0; i < splitCount; i++) {
+                let t_val = (i / splitCount) * 24;
+                let xPos = leftMargin + (t_val / 24) * plotWidth;
+                
+                drawCartesianPointer(xPos, chartBottom, chartTop, t_val, 1.2, 0.5, false);
+            }
+        }
+
+        // 4. 绘制笛卡尔实时垂直指针 (层级在上)
+        if (currentMode === 'realtime' || currentMode === 'hybrid') {
+            let xPos = leftMargin + (hoursDecimal / 24) * plotWidth;
+            drawCartesianPointer(xPos, chartBottom, chartTop, hoursDecimal, 4.5, 1.0, true);
+
+            // 基轴铜帽刻画
+            chartCtx.save();
+            chartCtx.beginPath();
+            chartCtx.arc(xPos, chartBottom, 4, 0, 2 * Math.PI);
+            chartCtx.fillStyle = '#222328';
+            chartCtx.fill();
+            chartCtx.strokeStyle = 'var(--accent-brass)';
+            chartCtx.lineWidth = 1;
+            chartCtx.stroke();
+            chartCtx.restore();
+        }
+    }
+
+    /**
+     * 笛卡尔坐标单针矢量绘制
+     */
+    function drawCartesianPointer(xPos, bottomY, topY, t, width, opacity, hasShadow = false) {
+        chartCtx.save();
+        chartCtx.globalAlpha = opacity;
+
+        if (hasShadow) {
+            chartCtx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            chartCtx.shadowBlur = 6;
+            chartCtx.shadowOffsetX = 2; 
+            chartCtx.shadowOffsetY = 0;
+        }
+
+        const grad = chartCtx.createLinearGradient(xPos, bottomY, xPos, topY);
+        addGradientStops(grad, t);
+
+        chartCtx.fillStyle = grad;
+        chartCtx.beginPath();
+        chartCtx.moveTo(xPos - width / 2, bottomY);
+        chartCtx.lineTo(xPos - width / 2, topY);
+        chartCtx.lineTo(xPos + width / 2, topY);
+        chartCtx.lineTo(xPos + width / 2, bottomY);
+        chartCtx.closePath();
+        chartCtx.fill();
+
+        chartCtx.restore();
+    }
+
+    /**
+     * 更新状态文本监视
+     */
+    function updateInfoDisplay() {
+        let hoursDecimal = getHoursFromEpoch(virtualTime);
+        let d = new Date(virtualTime);
+        let year = d.getFullYear();
+        let month = String(d.getMonth() + 1).padStart(2, '0');
+        let day = String(d.getDate()).padStart(2, '0');
+        let hour = String(d.getHours()).padStart(2, '0');
+        let min = String(d.getMinutes()).padStart(2, '0');
+        let sec = String(d.getSeconds()).padStart(2, '0');
+        document.getElementById('virtualTimeDisplay').innerText = 
+            `${year}/${month}/${day} ${hour}:${min}:${sec}`;
+
+        let t = hoursDecimal;
+        let textState = "";
+        if (t < 12) {
+            let pct = Math.round((t / 12) * 100);
+            textState = `WHITE/白: ${pct}% | AM/上午`;
+        } else {
+            let pct = Math.round(((t - 12) / 12) * 100);
+            textState = `BLACK/黑: ${pct}% | PM/下午`;
+        }
+        document.getElementById('pointerStateDisplay').innerText = textState;
+    }
+
+    /**
+     * 核心渲染主循环 (双屏同步渲染)
+     */
+    function animate() {
+        let now = Date.now();
+        let dt = now - lastFrameTime;
+        lastFrameTime = now;
+
+        if (!isPaused && currentMode !== 'split') {
+            virtualTime += dt * speedMultiplier;
+        }
+
+        drawClock();
+        drawCartesianChart();
+        updateInfoDisplay();
+
+        requestAnimationFrame(animate);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
